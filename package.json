@@ -1,0 +1,14 @@
+{
+  "name": "course-availability-checker",
+  "version": "1.0.0",
+  "description": "Script to check course availability on inscriptioncgm.mg",
+  "main": "course_checker.js",
+  "scripts": {
+    "start": "node course_checker.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.2",
+    "dotenv": "^16.4.7",
+    "puppeteer": "^21.5.2"
+  }
+}
