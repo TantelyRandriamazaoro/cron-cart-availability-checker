@@ -1,5 +1,4 @@
-const puppeteer = require('puppeteer');
-const axios = require('axios');
+const { JSDOM } = require('jsdom');
 const dotenv = require('dotenv');
 
 dotenv.config();
@@ -11,27 +10,26 @@ const URLS = [
 	"https://inscriptioncgm.mg/a1/75-cours-de-preparation-a-lexamen-start-deutsch-1-b.html",
 	"https://inscriptioncgm.mg/a1/307-preparation-de-lexamen-start-deutsch-1.html",
 	"https://inscriptioncgm.mg/a1/311-preparation-de-lexamen-start-deutsch-1.html",
-	"https://inscriptioncgm.mg/a1/131-preparation-de-lexamen-start-deutsch-1.html"
+	"https://inscriptioncgm.mg/a1/131-preparation-de-lexamen-start-deutsch-1.html",
+    "https://inscriptioncgm.mg/c2/102-goethe-zertifikat-a2-interne.html"
 ]
 
 // Function to check a single URL for course availability
-async function checkUrl(browser, url) {
+async function checkUrl(url) {
   console.log(`Checking URL: ${url}`);
   
   try {
-    const page = await browser.newPage();
-    await page.goto(url, { waitUntil: 'networkidle2', timeout: 60000 });
+    const response = await fetch(url);
+    const html = await response.text();
+    const dom = new JSDOM(html);
+    const document = dom.window.document;
     
     // Check if the #add_to_cart button exists and if its parent doesn't have the "unvisible" class
-    const isAvailable = await page.evaluate(() => {
-      const addToCartButton = document.querySelector('#add_to_cart');
-      if (!addToCartButton) return false;
-      
-      const parentElement = addToCartButton.parentElement;
-      return parentElement && !parentElement.classList.contains('unvisible');
-    });
+    const addToCartButton = document.querySelector('#add_to_cart');
+    const isAvailable = addToCartButton && 
+      addToCartButton.parentElement && 
+      !addToCartButton.parentElement.classList.contains('unvisible');
     
-    await page.close();
     return { url, isAvailable };
   } catch (error) {
     console.error(`Error checking URL ${url}:`, error);
@@ -42,11 +40,17 @@ async function checkUrl(browser, url) {
 // Function to send notification when a course becomes available
 async function sendNotification(availableCourses) {
   try {
-    const response = await axios.post(NOTIFICATION_ENDPOINT, {
-      availableCourses,
-      timestamp: new Date().toISOString()
+    const response = await fetch(NOTIFICATION_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        availableCourses
+      })
     });
-    console.log('Notification sent successfully:', response.data);
+    const data = await response.json();
+    console.log('Notification sent successfully:', data);
   } catch (error) {
     console.error('Error sending notification:', error);
   }
@@ -56,32 +60,19 @@ async function sendNotification(availableCourses) {
 async function checkAllUrls() {
   console.log(`Starting check at ${new Date().toISOString()}`);
   
-  let browser;
+  const results = [];
+  for (const url of URLS) {
+    const result = await checkUrl(url);
+    results.push(result);
+  }
   
-  try {
-    browser = await puppeteer.launch({ headless: true });
-    
-    const results = [];
-    for (const url of URLS) {
-      const result = await checkUrl(browser, url);
-      results.push(result);
-    }
-    
-    const availableCourses = results.filter(result => result.isAvailable);
-    
-    if (availableCourses.length > 0) {
-      console.log('Found available courses:', availableCourses);
-      await sendNotification(availableCourses);
-    } else {
-      console.log('No available courses found.');
-    }
-  } catch (error) {
-    console.error('Error during check:', error);
-  } finally {
-    if (browser) {
-      await browser.close();
-      console.log('Browser closed.');
-    }
+  const availableCourses = results.filter(result => result.isAvailable).map(result => result.url);
+  
+  if (availableCourses.length > 0) {
+    console.log('Found available courses:', availableCourses);
+    await sendNotification(availableCourses);
+  } else {
+    console.log('No available courses found.');
   }
 }
 
