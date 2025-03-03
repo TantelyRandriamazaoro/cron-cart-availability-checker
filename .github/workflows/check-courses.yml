@@ -2,7 +2,7 @@ name: Check Course Availability
 
 on:
   schedule:
-    - cron: '*/15 3-20 * * *'  # Runs every 15 minutes between 6:00 to 23:59 EAT
+    - cron: '*/5 3-20 * * *'  # Runs every 5 minutes between 6:00 to 23:59 EAT
   workflow_dispatch:
 
 jobs:
@@ -24,3 +24,4 @@ jobs:
         run: node course_checker.js
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }} 
+          URLS: ${{ secrets.URLS }}

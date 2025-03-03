@@ -6,13 +6,7 @@ dotenv.config();
 // Configuration
 const NOTIFICATION_ENDPOINT = process.env.SLACK_WEBHOOK_URL;
 
-const URLS = [
-	"https://inscriptioncgm.mg/a1/75-cours-de-preparation-a-lexamen-start-deutsch-1-b.html",
-	"https://inscriptioncgm.mg/a1/307-preparation-de-lexamen-start-deutsch-1.html",
-	"https://inscriptioncgm.mg/a1/311-preparation-de-lexamen-start-deutsch-1.html",
-	"https://inscriptioncgm.mg/a1/131-preparation-de-lexamen-start-deutsch-1.html",
-    "https://inscriptioncgm.mg/c2/102-goethe-zertifikat-a2-interne.html"
-]
+const URLS = JSON.parse(process.env.URLS);
 
 // Function to check a single URL for course availability
 async function checkUrl(url) {
